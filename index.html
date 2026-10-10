@@ -1,0 +1,1222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive first-order sizing model for a solar-first microgrid serving a scale-setting Mars settlement scenario.">
+  <title>Mars Solar Microgrid | First-Order Sizing Model</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f2f2f2;
+      --ink: #111111;
+      --muted: #555555;
+      --line: #d6d6d6;
+      --line-strong: #888888;
+      --header: #ffffff;
+      --rust: #222222;
+      --rust-soft: #f5f5f5;
+      --teal: #222222;
+      --teal-soft: #f5f5f5;
+      --blue: #222222;
+      --blue-soft: #eeeeee;
+      --amber: #222222;
+      --amber-soft: #f5f5f5;
+      --shadow: none;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--page);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button,
+    input[type="range"] {
+      cursor: pointer;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--ink);
+      background: var(--header);
+      color: var(--ink);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 18px 24px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 32px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 790px;
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .baseline-mark {
+      min-width: 210px;
+      padding-left: 18px;
+      border-left: 1px solid #aaaaaa;
+      color: #444444;
+      font-size: 13px;
+    }
+
+    .baseline-mark strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--ink);
+      font-size: 15px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 330px) minmax(0, 1fr);
+      gap: 20px;
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+    }
+
+    .panel,
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .controls {
+      position: sticky;
+      top: 18px;
+      align-self: start;
+      padding: 16px;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 15px;
+    }
+
+    h2,
+    h3 {
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 21px;
+    }
+
+    h3 {
+      font-size: 16px;
+    }
+
+    .section-kicker {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .control-group {
+      padding: 15px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .control-group:first-of-type {
+      padding-top: 2px;
+      border-top: 0;
+    }
+
+    .control-label,
+    .control-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .control-label label,
+    .control-label span:first-child {
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .control-value {
+      color: var(--teal);
+      font-size: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .control-note {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    input[type="number"] {
+      width: 112px;
+      height: 38px;
+      padding: 6px 9px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      color: var(--ink);
+      background: #ffffff;
+      font-weight: 750;
+    }
+
+    input[type="number"]:focus-visible,
+    input[type="range"]:focus-visible,
+    button:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid rgba(0, 0, 0, 0.25);
+      outline-offset: 2px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 12px 0 1px;
+      accent-color: #222222;
+    }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    .segmented input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .segmented label {
+      display: flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      color: var(--muted);
+      background: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      transition: none;
+    }
+
+    .segmented input:checked + label {
+      border-color: #111111;
+      color: #ffffff;
+      background: #111111;
+    }
+
+    .fixed-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      margin-top: 9px;
+    }
+
+    .fixed-item {
+      min-width: 0;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .fixed-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .fixed-item strong {
+      display: block;
+      margin-top: 2px;
+      color: var(--ink);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .reset-button {
+      width: 100%;
+      min-height: 40px;
+      margin-top: 15px;
+      border: 1px solid var(--rust);
+      border-radius: 0;
+      color: #111111;
+      background: #ffffff;
+      font-weight: 800;
+    }
+
+    .reset-button:hover {
+      color: #ffffff;
+      background: #111111;
+    }
+
+    .workspace {
+      min-width: 0;
+    }
+
+    .workspace-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 1px 0 13px;
+    }
+
+    .scenario-readout {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .scope-note {
+      margin-bottom: 14px;
+      padding: 11px 13px;
+      border-left: 3px solid #111111;
+      background: #f5f5f5;
+      color: #333333;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      min-height: 112px;
+      padding: 15px;
+      border-top: 1px solid var(--line);
+    }
+
+    .metric.rust {
+      border-top-color: var(--line);
+    }
+
+    .metric.blue {
+      border-top-color: var(--line);
+    }
+
+    .metric.amber {
+      border-top-color: var(--line);
+    }
+
+    .metric-label {
+      min-height: 34px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .metric-value {
+      display: block;
+      margin-top: 7px;
+      color: var(--ink);
+      font-size: clamp(22px, 2.3vw, 29px);
+      font-variant-numeric: tabular-nums;
+      font-weight: 850;
+      line-height: 1.05;
+      overflow-wrap: anywhere;
+    }
+
+    .metric-sub {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .content-grid > .panel,
+    .calculation-panel,
+    .sensitivity-panel,
+    .traceability {
+      padding: 18px;
+    }
+
+    .area-scale {
+      position: relative;
+      height: 42px;
+      margin-top: 21px;
+      border: 1px solid var(--line-strong);
+      background: repeating-linear-gradient(
+        90deg,
+        #ffffff 0,
+        #ffffff calc(25% - 1px),
+        var(--line) calc(25% - 1px),
+        var(--line) 25%
+      );
+      overflow: hidden;
+    }
+
+    .area-fill {
+      width: 17.4%;
+      height: 100%;
+      background: #333333;
+      transition: none;
+    }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .area-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .area-caption strong {
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .power-flow {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr);
+      align-items: center;
+      margin-top: 15px;
+    }
+
+    .flow-stage {
+      min-width: 0;
+      padding: 11px 8px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .flow-stage strong {
+      display: block;
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .flow-stage span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.25;
+    }
+
+    .flow-arrow {
+      color: var(--line-strong);
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .concept-note {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .calculation-panel {
+      margin-bottom: 14px;
+    }
+
+    .equations {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 24px;
+      margin-top: 7px;
+    }
+
+    .factor-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin: 9px 0 12px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .factor {
+      min-width: 0;
+      padding: 10px 9px;
+      border-right: 1px solid var(--line);
+    }
+
+    .factor:last-child {
+      border-right: 0;
+    }
+
+    .factor span,
+    .factor strong {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+
+    .factor span {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.25;
+    }
+
+    .factor strong {
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .equation {
+      display: grid;
+      grid-template-columns: 134px minmax(0, 1fr);
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 11px;
+    }
+
+    .equation-name {
+      color: var(--muted);
+      font-weight: 750;
+    }
+
+    .equation code {
+      color: var(--ink);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .interpretation {
+      margin: 14px 0 0;
+      padding: 11px 13px;
+      border: 1px solid #bbbbbb;
+      background: #f5f5f5;
+      color: #333333;
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    th,
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      background: var(--surface-soft);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+
+    td:not(:first-child) {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .current-row td {
+      background: var(--blue-soft);
+      font-weight: 750;
+    }
+
+    .sensitivity-panel {
+      margin-bottom: 14px;
+    }
+
+    .table-wrap {
+      margin-top: 11px;
+      overflow-x: auto;
+    }
+
+    .traceability summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      color: var(--ink);
+      font-weight: 850;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .traceability summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .traceability summary::after {
+      content: "+";
+      color: var(--teal);
+      font-size: 21px;
+      font-weight: 500;
+    }
+
+    .traceability[open] summary::after {
+      content: "−";
+    }
+
+    .traceability .table-wrap {
+      margin-top: 15px;
+    }
+
+    .traceability table {
+      min-width: 880px;
+    }
+
+    .traceability td:first-child {
+      width: 22%;
+      font-weight: 750;
+    }
+
+    .traceability td:nth-child(2),
+    .traceability td:nth-child(3) {
+      width: 16%;
+    }
+
+    .traceability td:nth-child(4) {
+      color: var(--muted);
+    }
+
+    footer {
+      padding: 0 32px 34px;
+      color: var(--muted);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    @media (max-width: 1120px) {
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .content-grid,
+      .equations {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .topbar-inner {
+        display: block;
+        padding: 22px 18px 19px;
+      }
+
+      .baseline-mark {
+        margin-top: 17px;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        padding: 18px;
+      }
+
+      .controls {
+        position: static;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .workspace-head,
+      .area-caption {
+        display: block;
+      }
+
+      .scenario-readout {
+        margin-top: 7px;
+        text-align: left;
+      }
+
+      .metric {
+        min-height: 100px;
+      }
+
+      .power-flow {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .flow-arrow {
+        transform: rotate(90deg);
+      }
+
+      .equation {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      .factor-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .factor {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .fixed-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .topbar {
+        color: #000000;
+        background: #ffffff;
+        border-bottom-color: #000000;
+      }
+
+      .subtitle,
+      .baseline-mark,
+      .eyebrow {
+        color: #333333;
+      }
+
+      .layout {
+        display: block;
+        max-width: none;
+        padding: 18px;
+      }
+
+      .controls {
+        position: static;
+        margin-bottom: 14px;
+      }
+
+      .panel,
+      .metric {
+        break-inside: avoid;
+        box-shadow: none;
+      }
+
+      .traceability {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <p class="eyebrow">Mars settlement power study</p>
+        <h1>Mars Solar Microgrid</h1>
+        <p class="subtitle">Interactive first-order scenario sizing for photovoltaic generation, provisional LFP storage, and a protected survival bus.</p>
+      </div>
+      <div class="baseline-mark">
+        <strong>Paper baseline</strong>
+        1,000 people · 60 kWh/person/sol · H = 3.0 h/sol · D = 0.65
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="panel controls" aria-labelledby="controls-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="controls-title">Scenario inputs</h2>
+          <p class="section-kicker">Baseline and tested sensitivity values</p>
+        </div>
+      </div>
+
+      <form id="model-form">
+        <div class="control-group">
+          <div class="control-row">
+            <div>
+              <label for="population"><strong>Scale-setting population</strong></label>
+              <p class="control-note">A linear rescaling input, not a demographic forecast.</p>
+            </div>
+            <input id="population" type="number" min="250" max="10000" step="250" value="1000" inputmode="numeric">
+          </div>
+        </div>
+
+        <fieldset class="control-group" style="margin:0;border-left:0;border-right:0;border-bottom:0;padding-left:0;padding-right:0">
+          <legend class="control-label" style="width:100%;padding:0">
+            <span>Electricity demand</span>
+            <span class="control-value" id="demand-value">60 kWh/person/sol</span>
+          </legend>
+          <div class="segmented" role="radiogroup" aria-label="Electricity demand sensitivity">
+            <input id="demand-60" name="demand" type="radio" value="60" checked>
+            <label for="demand-60">60<br>Baseline</label>
+            <input id="demand-100" name="demand" type="radio" value="100">
+            <label for="demand-100">100<br>Medium</label>
+            <input id="demand-150" name="demand" type="radio" value="150">
+            <label for="demand-150">150<br>High</label>
+          </div>
+          <p class="control-note">The paper evaluates 60, 100, and 150 kWh per person per sol.</p>
+        </fieldset>
+
+        <div class="control-group">
+          <div class="control-label">
+            <label for="sun-hours">Equivalent full-sun hours, H</label>
+            <span class="control-value" id="sun-value">3.0 h/sol</span>
+          </div>
+          <input id="sun-hours" type="range" min="2" max="4" step="0.1" value="3" aria-describedby="sun-note">
+          <div class="range-labels"><span>2.0</span><span>Paper baseline 3.0</span><span>4.0</span></div>
+          <p class="control-note" id="sun-note">Illustrative plane-of-array solar resource; not a site-specific time series.</p>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <label for="retention">Combined PV retention factor, D</label>
+            <span class="control-value" id="retention-value">0.65</span>
+          </div>
+          <input id="retention" type="range" min="0.43" max="0.94" step="0.01" value="0.65" aria-describedby="retention-note">
+          <div class="range-labels"><span>0.43</span><span>Paper baseline 0.65</span><span>0.94</span></div>
+          <p class="control-note" id="retention-note">Combined sensitivity for the explicit loss budget; bounds are not probability limits.</p>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label">
+            <span>Fixed paper assumptions</span>
+            <span class="control-value">Provisional</span>
+          </div>
+          <div class="fixed-grid">
+            <div class="fixed-item"><span>Reference irradiance</span><strong>590 W/m²</strong></div>
+            <div class="fixed-item"><span>PV cell efficiency</span><strong>30% BOL</strong></div>
+            <div class="fixed-item"><span>Storage technology</span><strong>LFP lithium-ion</strong></div>
+            <div class="fixed-item"><span>Usable autonomy</span><strong>2 sols</strong></div>
+            <div class="fixed-item"><span>Critical-load fraction</span><strong>50%</strong></div>
+            <div class="fixed-item"><span>Firm design allowance</span><strong>20%</strong></div>
+          </div>
+        </div>
+
+        <button class="reset-button" id="reset-button" type="button">Reset to paper baseline</button>
+      </form>
+    </aside>
+
+    <section class="workspace" aria-live="polite">
+      <div class="workspace-head">
+        <div>
+          <h2>First-order sizing outputs</h2>
+          <p class="section-kicker">Calculated from the currently selected scenario</p>
+        </div>
+        <div class="scenario-readout" id="scenario-readout">Baseline low-demand scenario</div>
+      </div>
+
+      <div class="scope-note">
+        These are order-of-magnitude scenario-sizing outputs. They do not demonstrate technical feasibility, charging margin, lifecycle performance, cost, or quantitative reliability.
+      </div>
+
+      <div class="metrics">
+        <article class="metric teal">
+          <div class="metric-label">Settlement electricity demand</div>
+          <strong class="metric-value" id="energy-output">60 MWh/sol</strong>
+          <span class="metric-sub" id="average-output">2.43 MW average load</span>
+        </article>
+        <article class="metric rust">
+          <div class="metric-label">Required active PV area</div>
+          <strong class="metric-value" id="area-output">0.174 km²</strong>
+          <span class="metric-sub" id="area-m2-output">173,837 m² active cell area</span>
+        </article>
+        <article class="metric amber">
+          <div class="metric-label">Derated reference-condition output</div>
+          <strong class="metric-value" id="derated-output">20.0 MW</strong>
+          <span class="metric-sub" id="bol-output">30.8 MW before retention losses</span>
+        </article>
+        <article class="metric blue">
+          <div class="metric-label">Usable storage for two sols</div>
+          <strong class="metric-value" id="usable-storage-output">120 MWh</strong>
+          <span class="metric-sub">Delivered-energy target</span>
+        </article>
+        <article class="metric blue">
+          <div class="metric-label">Installed LFP nameplate capacity</div>
+          <strong class="metric-value" id="nameplate-output">≈231 MWh</strong>
+          <span class="metric-sub">Includes DoD, efficiency, EOL, availability, reserve</span>
+        </article>
+        <article class="metric teal">
+          <div class="metric-label">Preliminary survival-bus load</div>
+          <strong class="metric-value" id="survival-output">1.22 MW</strong>
+          <span class="metric-sub">50% of average settlement load</span>
+        </article>
+        <article class="metric rust">
+          <div class="metric-label">Available firm-power requirement</div>
+          <strong class="metric-value" id="firm-output">1.5 MW</strong>
+          <span class="metric-sub">Survival bus plus 20% design allowance</span>
+        </article>
+        <article class="metric amber">
+          <div class="metric-label">Conceptual N+1 backup</div>
+          <strong class="metric-value" id="redundancy-output">2 × 1.5 MW</strong>
+          <span class="metric-sub">Two independent backup trains</span>
+        </article>
+      </div>
+
+      <div class="content-grid">
+        <section class="panel" aria-labelledby="area-title">
+          <div class="section-heading">
+            <div>
+              <h3 id="area-title">Solar field scale</h3>
+              <p class="section-kicker">Active photovoltaic area against a 1.00 km² reference</p>
+            </div>
+          </div>
+          <div class="area-scale" role="img" aria-label="Active photovoltaic area relative to one square kilometer">
+            <div class="area-fill" id="area-fill"></div>
+          </div>
+          <div class="scale-labels"><span>0</span><span>0.25</span><span>0.50</span><span>0.75</span><span>1.00 km²</span></div>
+          <div class="area-caption">
+            <span><strong id="yield-output">0.345 kWh/m²/sol</strong><br>derated daily PV yield</span>
+            <span><strong id="field-context">17.4% of reference</strong><br>active area only; gross field is larger</span>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="power-title">
+          <div class="section-heading">
+            <div>
+              <h3 id="power-title">Survival bus and firm power</h3>
+              <p class="section-kicker">Functional sizing concept, not a reliability demonstration</p>
+            </div>
+          </div>
+          <div class="power-flow">
+            <div class="flow-stage"><strong id="flow-average">2.43 MW</strong><span>average settlement load</span></div>
+            <div class="flow-arrow" aria-hidden="true">→</div>
+            <div class="flow-stage"><strong id="flow-survival">1.22 MW</strong><span>50% survival bus</span></div>
+            <div class="flow-arrow" aria-hidden="true">→</div>
+            <div class="flow-stage"><strong id="flow-firm">1.5 MW</strong><span>available firm power</span></div>
+          </div>
+          <p class="concept-note" id="backup-note">Conceptual backup: 2 × 1.5 MW independent trains for N+1 redundancy. Technology, endurance validation, startup behavior, and common-cause failures remain unresolved.</p>
+        </section>
+      </div>
+
+      <section class="panel calculation-panel" aria-labelledby="calculation-title">
+        <div class="section-heading">
+          <div>
+            <h3 id="calculation-title">Displayed calculations</h3>
+            <p class="section-kicker">The same first-order relationships used in the revised paper</p>
+          </div>
+        </div>
+        <div class="factor-strip" aria-label="Provisional LFP nameplate-sizing assumptions">
+          <div class="factor"><span>Depth of discharge</span><strong>80%</strong></div>
+          <div class="factor"><span>Discharge efficiency</span><strong>95%</strong></div>
+          <div class="factor"><span>End-of-life retention</span><strong>80%</strong></div>
+          <div class="factor"><span>Storage availability</span><strong>95%</strong></div>
+          <div class="factor"><span>Reserve held back</span><strong>10%</strong></div>
+        </div>
+        <div class="equations">
+          <div class="equation"><span class="equation-name">Settlement energy</span><code id="eq-energy">Esol = 1,000 × 60 ÷ 1,000 = 60 MWh/sol</code></div>
+          <div class="equation"><span class="equation-name">Average load</span><code id="eq-average">Pavg = 60 ÷ 24.6598 = 2.43 MW</code></div>
+          <div class="equation"><span class="equation-name">Derated PV yield</span><code id="eq-yield">YPV = 0.590 × 0.30 × 3.0 × 0.65 = 0.345 kWh/m²/sol</code></div>
+          <div class="equation"><span class="equation-name">Active PV area</span><code id="eq-area">APV = 60,000 ÷ 0.345 = 173,837 m² = 0.174 km²</code></div>
+          <div class="equation"><span class="equation-name">Derated reference output</span><code id="eq-derated">Pderated,ref = APV × 0.590 × 0.30 × 0.65 ÷ 1,000 = 20.0 MW</code></div>
+          <div class="equation"><span class="equation-name">Usable storage</span><code id="eq-storage">Eusable = 60 × 2 sols = 120 MWh</code></div>
+          <div class="equation"><span class="equation-name">Installed nameplate</span><code id="eq-nameplate">Enameplate = 120 ÷ (0.80 × 0.95 × 0.80 × 0.95 × 0.90) = 230.8 ≈ 231 MWh</code></div>
+          <div class="equation"><span class="equation-name">Survival bus</span><code id="eq-survival">Psurvival = 2.43 × 0.50 = 1.22 MW</code></div>
+          <div class="equation"><span class="equation-name">Firm power</span><code id="eq-firm">Pfirm = round up (1.22 × 1.20) = 1.5 MW available</code></div>
+          <div class="equation"><span class="equation-name">N+1 concept</span><code id="eq-redundancy">2 independent trains × 1.5 MW each</code></div>
+        </div>
+        <p class="interpretation" id="interpretation">The baseline closes the nominal daily energy balance only under the selected resource and loss assumptions. It does not provide a demonstrated charging margin for storage losses, reserve recovery, auxiliary demand, or prolonged low-solar operation.</p>
+      </section>
+
+      <section class="panel sensitivity-panel" aria-labelledby="sensitivity-title">
+        <div class="section-heading">
+          <div>
+            <h3 id="sensitivity-title">Demand sensitivity</h3>
+            <p class="section-kicker" id="sensitivity-caption">Population 1,000 · H = 3.0 h/sol · D = 0.65</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Demand case</th>
+                <th scope="col">Settlement energy</th>
+                <th scope="col">Active PV area</th>
+                <th scope="col">Derated ref. output</th>
+                <th scope="col">Usable storage</th>
+              </tr>
+            </thead>
+            <tbody id="sensitivity-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <details class="panel traceability">
+        <summary>Traceability and assumptions</summary>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Parameter</th>
+                <th scope="col">Baseline</th>
+                <th scope="col">Tested range</th>
+                <th scope="col">Source or limitation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Settlement population, N</td><td>1,000 people</td><td>1,000 in paper</td><td>Scale-setting scenario, not a demographic forecast. Interface rescaling remains linear.</td></tr>
+              <tr><td>Electricity demand, e</td><td>60 kWh/person/sol</td><td>60, 100, 150</td><td>Bottom-up illustrative allocation; subsystem loads and duty cycles remain preliminary.</td></tr>
+              <tr><td>Reference irradiance, Iref</td><td>590 W/m²</td><td>Not varied</td><td>Reference value, not surface or site-specific plane-of-array irradiance.</td></tr>
+              <tr><td>Equivalent full-sun hours, H</td><td>3.0 h/sol</td><td>2.0–4.0 h/sol</td><td>Illustrative solar-resource scenario; no Martian-year time series is modeled.</td></tr>
+              <tr><td>PV cell efficiency</td><td>30% BOL</td><td>Not varied</td><td>Beginning-of-life cell value, not demonstrated installed-array efficiency on Mars.</td></tr>
+              <tr><td>Combined PV retention factor, D</td><td>0.65</td><td>Approx. 0.43–0.94</td><td>Product of the paper's explicit loss factors; sensitivity bounds are not probability distributions.</td></tr>
+              <tr><td>Usable storage autonomy</td><td>2 sols</td><td>Not varied</td><td>Operational sizing assumption; does not establish adequacy through extended low-solar periods.</td></tr>
+              <tr><td>Battery chemistry</td><td>LFP lithium-ion</td><td>Not varied</td><td>Provisional selection requiring Mars-specific qualification.</td></tr>
+              <tr><td>Depth of discharge</td><td>80%</td><td>Not varied</td><td>Preliminary LFP sizing assumption.</td></tr>
+              <tr><td>Discharge efficiency</td><td>95%</td><td>Not varied</td><td>Preliminary assumption; not a validated Mars battery-system value.</td></tr>
+              <tr><td>End-of-life retention</td><td>80%</td><td>Not varied</td><td>Depends on cycle history, temperature, radiation, and mission duration.</td></tr>
+              <tr><td>Storage availability</td><td>95%</td><td>Not varied</td><td>Allowance for unavailable modules; failure and repair distributions are not modeled.</td></tr>
+              <tr><td>Minimum reserve</td><td>10%</td><td>Not varied</td><td>Reserve is held back, so the nameplate equation divides by 0.90.</td></tr>
+              <tr><td>Critical-load fraction</td><td>50%</td><td>Not varied</td><td>Preliminary classification requiring subsystem-level load profiles.</td></tr>
+              <tr><td>Firm-power requirement</td><td>1.5 MW available</td><td>Not varied</td><td>Baseline 1.22 MW survival bus plus 20% design allowance, rounded up.</td></tr>
+              <tr><td>Firm-power redundancy</td><td>2 × 1.5 MW</td><td>Not varied</td><td>Conceptual N+1 arrangement; common-cause failures and component availability are unresolved.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    First-order scenario model. Outputs should not be interpreted as a feasibility, reliability, cost, or final-design claim.
+  </footer>
+
+  <script>
+    const CONSTANTS = Object.freeze({
+      irradianceKwM2: 0.590,
+      solHours: 24.6598,
+      pvEfficiency: 0.30,
+      storageSols: 2,
+      depthOfDischarge: 0.80,
+      dischargeEfficiency: 0.95,
+      endOfLifeRetention: 0.80,
+      availability: 0.95,
+      reserveFraction: 0.10,
+      criticalLoadFraction: 0.50,
+      firmDesignAllowance: 0.20
+    });
+
+    const populationInput = document.getElementById("population");
+    const sunInput = document.getElementById("sun-hours");
+    const retentionInput = document.getElementById("retention");
+    const demandInputs = [...document.querySelectorAll('input[name="demand"]')];
+
+    function formatNumber(value, digits = 0) {
+      return value.toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function roundUpTenth(value) {
+      return Math.ceil((value - Number.EPSILON) * 10) / 10;
+    }
+
+    function selectedDemand() {
+      return Number(demandInputs.find((input) => input.checked).value);
+    }
+
+    function calculate(population, demand, sunHours, retention) {
+      const dailyEnergyMWh = population * demand / 1000;
+      const averageLoadMW = dailyEnergyMWh / CONSTANTS.solHours;
+      const pvYieldKWhM2Sol = CONSTANTS.irradianceKwM2 * CONSTANTS.pvEfficiency * sunHours * retention;
+      const activeAreaM2 = dailyEnergyMWh * 1000 / pvYieldKWhM2Sol;
+      const activeAreaKm2 = activeAreaM2 / 1_000_000;
+      const deratedReferenceMW = activeAreaM2 * CONSTANTS.irradianceKwM2 * CONSTANTS.pvEfficiency * retention / 1000;
+      const bolReferenceMW = activeAreaM2 * CONSTANTS.irradianceKwM2 * CONSTANTS.pvEfficiency / 1000;
+      const usableStorageMWh = dailyEnergyMWh * CONSTANTS.storageSols;
+      const reserveAvailability = 1 - CONSTANTS.reserveFraction;
+      const installedNameplateMWh = usableStorageMWh / (
+        CONSTANTS.depthOfDischarge *
+        CONSTANTS.dischargeEfficiency *
+        CONSTANTS.endOfLifeRetention *
+        CONSTANTS.availability *
+        reserveAvailability
+      );
+      const survivalBusMW = averageLoadMW * CONSTANTS.criticalLoadFraction;
+      const rawFirmPowerMW = survivalBusMW * (1 + CONSTANTS.firmDesignAllowance);
+      const availableFirmPowerMW = roundUpTenth(rawFirmPowerMW);
+
+      return {
+        dailyEnergyMWh,
+        averageLoadMW,
+        pvYieldKWhM2Sol,
+        activeAreaM2,
+        activeAreaKm2,
+        deratedReferenceMW,
+        bolReferenceMW,
+        usableStorageMWh,
+        installedNameplateMWh,
+        survivalBusMW,
+        rawFirmPowerMW,
+        availableFirmPowerMW
+      };
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function updateSensitivity(population, currentDemand, sunHours, retention) {
+      const body = document.getElementById("sensitivity-body");
+      body.replaceChildren();
+
+      [60, 100, 150].forEach((demand) => {
+        const result = calculate(population, demand, sunHours, retention);
+        const row = document.createElement("tr");
+        if (demand === currentDemand) row.className = "current-row";
+
+        const values = [
+          `${demand} kWh/person/sol`,
+          `${formatNumber(result.dailyEnergyMWh, 0)} MWh/sol`,
+          `${result.activeAreaKm2.toFixed(3)} km²`,
+          `${result.deratedReferenceMW.toFixed(1)} MW`,
+          `${formatNumber(result.usableStorageMWh, 0)} MWh`
+        ];
+
+        values.forEach((value) => {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          row.appendChild(cell);
+        });
+        body.appendChild(row);
+      });
+    }
+
+    function update() {
+      const population = Math.min(10000, Math.max(250, Number(populationInput.value) || 1000));
+      const demand = selectedDemand();
+      const sunHours = Number(sunInput.value);
+      const retention = Number(retentionInput.value);
+      const result = calculate(population, demand, sunHours, retention);
+      const isBaseline = population === 1000 && demand === 60 && sunHours === 3 && retention === 0.65;
+
+      setText("demand-value", `${demand} kWh/person/sol`);
+      setText("sun-value", `${sunHours.toFixed(1)} h/sol`);
+      setText("retention-value", retention.toFixed(2));
+      setText("scenario-readout", isBaseline ? "Baseline low-demand scenario" : "Interactive sensitivity scenario");
+
+      setText("energy-output", `${formatNumber(result.dailyEnergyMWh, 0)} MWh/sol`);
+      setText("average-output", `${result.averageLoadMW.toFixed(2)} MW average load`);
+      setText("area-output", `${result.activeAreaKm2.toFixed(3)} km²`);
+      setText("area-m2-output", `${formatNumber(result.activeAreaM2, 0)} m² active cell area`);
+      setText("derated-output", `${result.deratedReferenceMW.toFixed(1)} MW`);
+      setText("bol-output", `${result.bolReferenceMW.toFixed(1)} MW before retention losses`);
+      setText("usable-storage-output", `${formatNumber(result.usableStorageMWh, 0)} MWh`);
+      setText("nameplate-output", `≈${formatNumber(result.installedNameplateMWh, 0)} MWh`);
+      setText("survival-output", `${result.survivalBusMW.toFixed(2)} MW`);
+      setText("firm-output", `${result.availableFirmPowerMW.toFixed(1)} MW`);
+      setText("redundancy-output", `2 × ${result.availableFirmPowerMW.toFixed(1)} MW`);
+
+      setText("yield-output", `${result.pvYieldKWhM2Sol.toFixed(3)} kWh/m²/sol`);
+      setText("field-context", result.activeAreaKm2 <= 1
+        ? `${(result.activeAreaKm2 * 100).toFixed(1)}% of reference`
+        : `${result.activeAreaKm2.toFixed(2)}× reference`);
+      document.getElementById("area-fill").style.width = `${Math.min(100, result.activeAreaKm2 * 100)}%`;
+
+      setText("flow-average", `${result.averageLoadMW.toFixed(2)} MW`);
+      setText("flow-survival", `${result.survivalBusMW.toFixed(2)} MW`);
+      setText("flow-firm", `${result.availableFirmPowerMW.toFixed(1)} MW`);
+      setText("backup-note", `Conceptual backup: 2 × ${result.availableFirmPowerMW.toFixed(1)} MW independent trains for N+1 redundancy. Technology, endurance validation, startup behavior, and common-cause failures remain unresolved.`);
+
+      setText("eq-energy", `Esol = ${formatNumber(population, 0)} × ${demand} ÷ 1,000 = ${formatNumber(result.dailyEnergyMWh, 0)} MWh/sol`);
+      setText("eq-average", `Pavg = ${formatNumber(result.dailyEnergyMWh, 0)} ÷ ${CONSTANTS.solHours} = ${result.averageLoadMW.toFixed(2)} MW`);
+      setText("eq-yield", `YPV = 0.590 × 0.30 × ${sunHours.toFixed(1)} × ${retention.toFixed(2)} = ${result.pvYieldKWhM2Sol.toFixed(3)} kWh/m²/sol`);
+      setText("eq-area", `APV = ${formatNumber(result.dailyEnergyMWh * 1000, 0)} ÷ ${result.pvYieldKWhM2Sol.toFixed(3)} = ${formatNumber(result.activeAreaM2, 0)} m² = ${result.activeAreaKm2.toFixed(3)} km²`);
+      setText("eq-derated", `Pderated,ref = APV × 0.590 × 0.30 × ${retention.toFixed(2)} ÷ 1,000 = ${result.deratedReferenceMW.toFixed(1)} MW`);
+      setText("eq-storage", `Eusable = ${formatNumber(result.dailyEnergyMWh, 0)} × 2 sols = ${formatNumber(result.usableStorageMWh, 0)} MWh`);
+      setText("eq-nameplate", `Enameplate = ${formatNumber(result.usableStorageMWh, 0)} ÷ (0.80 × 0.95 × 0.80 × 0.95 × 0.90) = ${result.installedNameplateMWh.toFixed(1)} ≈ ${formatNumber(result.installedNameplateMWh, 0)} MWh`);
+      setText("eq-survival", `Psurvival = ${result.averageLoadMW.toFixed(2)} × 0.50 = ${result.survivalBusMW.toFixed(2)} MW`);
+      setText("eq-firm", `Pfirm = round up (${result.survivalBusMW.toFixed(2)} × 1.20) = ${result.availableFirmPowerMW.toFixed(1)} MW available`);
+      setText("eq-redundancy", `2 independent trains × ${result.availableFirmPowerMW.toFixed(1)} MW each`);
+
+      setText("interpretation", `This scenario closes the nominal ${formatNumber(result.dailyEnergyMWh, 0)} MWh/sol energy balance only under the selected resource and loss assumptions. It does not provide a demonstrated charging margin for storage losses, reserve recovery, auxiliary demand, or prolonged low-solar operation.`);
+      setText("sensitivity-caption", `Population ${formatNumber(population, 0)} · H = ${sunHours.toFixed(1)} h/sol · D = ${retention.toFixed(2)}`);
+      updateSensitivity(population, demand, sunHours, retention);
+    }
+
+    document.getElementById("model-form").addEventListener("input", update);
+    populationInput.addEventListener("change", () => {
+      const boundedPopulation = Math.min(10000, Math.max(250, Number(populationInput.value) || 1000));
+      populationInput.value = String(Math.round(boundedPopulation / 250) * 250);
+      update();
+    });
+    document.getElementById("reset-button").addEventListener("click", () => {
+      document.getElementById("model-form").reset();
+      populationInput.value = "1000";
+      update();
+    });
+
+    update();
+  </script>
+</body>
+</html>

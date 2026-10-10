@@ -1,2 +1,43 @@
-# mars-solar-microgrid
-Interactive preliminary sizing model for a solar-first microgrid serving an illustrative Mars settlement.
+# Mars Solar Microgrid Sizing Model — Version 8
+
+An interactive first-order sizing calculator by Yiran Gao for a solar-first microgrid serving an illustrative 1,000-person Mars settlement.
+
+The calculator estimates settlement energy demand, average load, active photovoltaic area, reference-condition output, battery capacity, and survival-bus backup power. Users can vary population, per-capita demand, equivalent full-sun hours, and the combined photovoltaic retention factor.
+
+## Use the calculator
+
+Open `index.html` in a modern web browser. All calculations run in the browser; no installation, account, server, or external library is required.
+
+The supplied Version 8 HTML is preserved without changes to its calculations or interface and is named `index.html` so GitHub Pages can serve it as the site homepage.
+
+## Baseline
+
+| Input | Value |
+| --- | --- |
+| Population | 1,000 people |
+| Per-capita electricity demand | 60 kWh/person/sol |
+| Equivalent full-sun hours | 3.0 h/sol |
+| Combined photovoltaic retention factor | 0.65 |
+| Reference irradiance | 590 W/m² |
+| Photovoltaic cell efficiency | 30% |
+| Usable storage autonomy | 2 sols |
+
+The baseline gives 60 MWh/sol of demand, approximately 0.174 km² of active photovoltaic area, 20.0 MW of derated reference-condition output, 120 MWh of usable storage, approximately 231 MWh of battery nameplate capacity, and two conceptual 1.5 MW backup trains.
+
+## Scope
+
+This is a deterministic preliminary sizing model. It does not calculate site-specific sunlight, time-dependent battery operation, dust-storm performance, equipment failure probabilities, loss-of-load probability, or expected unserved energy. The calculations do not establish feasibility or quantitative reliability. Active photovoltaic area excludes field spacing and supporting infrastructure.
+
+## Publish with GitHub Pages
+
+1. Create a public repository named `mars-solar-microgrid`.
+2. Upload `index.html`, this `README.md`, and `.nojekyll` to the root of the `main` branch.
+3. Open **Settings → Pages**.
+4. Under **Build and deployment**, choose **Deploy from a branch**, select **main** and **/(root)**, and save.
+5. After deployment completes, open the website address shown in Pages settings.
+
+Official instructions: https://docs.github.com/en/pages/getting-started-with-github-pages/creating-a-github-pages-site
+
+## Research citation
+
+For a permanent software citation, archive the exact model version used for the manuscript in a research repository such as Zenodo and cite the resulting DOI. The GitHub Pages address provides access to the live calculator; it does not imply peer-reviewed publication.
