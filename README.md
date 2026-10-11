@@ -1,4 +1,4 @@
-# Mars Solar Microgrid Sizing Model — Version 8
+# Mars Solar Microgrid Sizing Model — Version 9
 
 An interactive first-order sizing calculator by Yiran Gao for a solar-first microgrid serving an illustrative 1,000-person Mars settlement.
 
@@ -8,7 +8,7 @@ The calculator estimates settlement energy demand, average load, active photovol
 
 Open `index.html` in a modern web browser. All calculations run in the browser; no installation, account, server, or external library is required.
 
-The supplied Version 8 HTML is preserved without changes to its calculations or interface and is named `index.html` so GitHub Pages can serve it as the site homepage.
+The live calculator now provides a Version 9 advanced-scenario interface powered by `mars-microgrid-scenario-v9.json`, with editable parameters and JSON import/export. Its underlying first-order sizing methods have been extended for editable loss and capacity assumptions, while the new operational metrics remain simplified exploratory estimates.
 
 ## Baseline
 
@@ -41,3 +41,9 @@ Official instructions: https://docs.github.com/en/pages/getting-started-with-git
 ## Research citation
 
 For a permanent software citation, archive the exact model version used for the manuscript in a research repository such as Zenodo and cite the resulting DOI. The GitHub Pages address provides access to the live calculator; it does not imply peer-reviewed publication.
+
+## Version 9 scenario file and limitations
+
+The default scenario configuration is stored in `mars-microgrid-scenario-v9.json`. Open the **Version 9 · Advanced scenario** panel to adjust assumptions or import/export a Version 9 JSON file. The first-order dashboard includes updated PV and battery sizing inputs, while the additional operational panel supplies approximate PV footprint, storage energy, backup capacity and storm deficit estimates.
+
+**Important:** The advanced panel is not a validated time-resolved or probabilistic reliability model. Parameters including seasonal cycles, failure availability, backup path availability, charging caps and time-step resolution are stored and exposed but not fully integrated into a chronological dispatch simulation. Storm-related estimates use simplified daily energy balances, not SOC trajectories. Avoid presenting those outputs as LOLP, EENS or confirmed Mars mission feasibility.
