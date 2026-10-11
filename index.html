@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Interactive first-order sizing model for a solar-first microgrid serving a scale-setting Mars settlement scenario.">
-  <title>Mars Solar Microgrid | Version 9 Scenario Model</title>
+  <title>Mars Solar Microgrid | First-Order Sizing Model</title>
   <style>
     :root {
       color-scheme: light;
@@ -775,9 +775,6 @@
       }
     }
   </style>
-<style>
-.v9-wrap{margin-top:16px}.v9-wrap details{border:1px solid #d6d6d6;padding:12px;margin-top:9px}.v9-wrap summary{cursor:pointer;font-weight:700}.v9-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}.v9-field{display:flex;flex-direction:column;gap:3px}.v9-field label{font-size:11px}.v9-field input,.v9-field select{max-width:100%;width:100%;padding:6px;border:1px solid #999;background:white}.v9-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.v9-actions button,.v9-actions label{border:1px solid #333;padding:7px;cursor:pointer;background:white;font-size:12px}.v9-results{margin:14px 0;padding:16px;border:1px solid #aaa}.v9-results h3{margin:0 0 8px}.v9-stat{padding:5px 0;border-top:1px solid #ddd}.v9-hint{font-size:12px;color:#555}.v9-error{color:#9b1c1c;font-size:12px}
-</style>
 </head>
 <body>
   <header class="topbar">
@@ -1054,7 +1051,7 @@
   </footer>
 
   <script>
-    const CONSTANTS = ({
+    const CONSTANTS = Object.freeze({
       irradianceKwM2: 0.590,
       solHours: 24.6598,
       pvEfficiency: 0.30,
@@ -1089,10 +1086,10 @@
     }
 
     function calculate(population, demand, sunHours, retention) {
-      const dailyEnergyMWh = population * demand / 1000 + (window.v9 ? window.v9.auxiliary : 0);
+      const dailyEnergyMWh = population * demand / 1000;
       const averageLoadMW = dailyEnergyMWh / CONSTANTS.solHours;
       const pvYieldKWhM2Sol = CONSTANTS.irradianceKwM2 * CONSTANTS.pvEfficiency * sunHours * retention;
-      const activeAreaM2 = dailyEnergyMWh * 1000 / pvYieldKWhM2Sol * (window.v9 ? window.v9.pvMargin : 1);
+      const activeAreaM2 = dailyEnergyMWh * 1000 / pvYieldKWhM2Sol;
       const activeAreaKm2 = activeAreaM2 / 1_000_000;
       const deratedReferenceMW = activeAreaM2 * CONSTANTS.irradianceKwM2 * CONSTANTS.pvEfficiency * retention / 1000;
       const bolReferenceMW = activeAreaM2 * CONSTANTS.irradianceKwM2 * CONSTANTS.pvEfficiency / 1000;
@@ -1107,8 +1104,7 @@
       );
       const survivalBusMW = averageLoadMW * CONSTANTS.criticalLoadFraction;
       const rawFirmPowerMW = survivalBusMW * (1 + CONSTANTS.firmDesignAllowance);
-      const step = window.v9 ? window.v9.roundingMW : 0.1;
-      const availableFirmPowerMW = Math.ceil((rawFirmPowerMW - Number.EPSILON) / step) * step;
+      const availableFirmPowerMW = roundUpTenth(rawFirmPowerMW);
 
       return {
         dailyEnergyMWh,
@@ -1162,7 +1158,7 @@
       const sunHours = Number(sunInput.value);
       const retention = Number(retentionInput.value);
       const result = calculate(population, demand, sunHours, retention);
-      const isBaseline = population === 1000 && demand === 60 && sunHours === 3 && retention === 0.65 && (!window.v9 || window.v9.pvMargin === 1);
+      const isBaseline = population === 1000 && demand === 60 && sunHours === 3 && retention === 0.65;
 
       setText("demand-value", `${demand} kWh/person/sol`);
       setText("sun-value", `${sunHours.toFixed(1)} h/sol`);
@@ -1216,97 +1212,11 @@
     });
     document.getElementById("reset-button").addEventListener("click", () => {
       document.getElementById("model-form").reset();
-      if (window.resetV9) window.resetV9();
       populationInput.value = "1000";
       update();
     });
 
-    window.refreshSizing = update;
     update();
   </script>
-<script>
-(() => {
- const spec = {"population":"Settlement population|people","demand":"Demand|kWh/person/sol","solHours":"Sol duration|hours","auxiliary":"Auxiliary demand|MWh/sol","critical":"Critical load|%","sensitivity1":"Demand sensitivity 1|kWh/person/sol","sensitivity2":"Demand sensitivity 2|kWh/person/sol","sensitivity3":"Demand sensitivity 3|kWh/person/sol","irradiance":"Irradiance|W/m²","efficiency":"PV efficiency|%","sunHours":"Equivalent sun hours|h/sol","retentionMode":"Retention mode|aggregate;factors","retention":"PV retention|%","pvMargin":"PV oversizing factor|×","coverage":"Field coverage|%","blockMW":"PV block size|MW","spectral":"Spectral retention|%","soiling":"Soiling retention|%","temperature":"Temperature retention|%","mismatch":"Mismatch retention|%","wiring":"Wiring retention|%","conversion":"Conversion retention|%","pvAvailability":"PV availability|%","radiation":"Radiation retention|%","pvEol":"PV EOL retention|%","chemistry":"Battery chemistry|LFP lithium-ion;Other","storageSols":"Storage autonomy|sols","dod":"Depth of discharge|%","chargeEfficiency":"Charge efficiency|%","dischargeEfficiency":"Discharge efficiency|%","batteryEol":"Battery EOL retention|%","batteryAvailability":"Battery availability|%","reserve":"Battery reserve|%","maxC":"Maximum C-rate|C","chargeMW":"Charge power cap|MW","dischargeMW":"Discharge power cap|MW","specificEnergy":"Specific energy|Wh/kg","firmMargin":"Firm margin|%","roundingMW":"Backup rounding step|MW","trains":"Backup trains|count","spares":"Spare trains|count","enduranceSols":"Fuel endurance|sols","transferHours":"Transfer time|hours","trainAvailability":"Train availability|%","pathAvailability":"Path availability|%","commonCause":"Common cause allowance|%","fuelEfficiency":"Fuel efficiency|%","fuelLhv":"Fuel lower heating value|kWh/kg","oxygenRatio":"Oxidizer/fuel ratio|kg/kg","yearSols":"Martian-year duration|sols","stepsPerSol":"Time steps per sol|count","seasonA":"Seasonal resource amplitude A|%","seasonB":"Seasonal resource amplitude B|%","seasonPhaseA":"Seasonal phase A|sol","seasonPhaseB":"Seasonal phase B|sol","sunrise":"Sunrise|hour","sunset":"Sunset|hour","loadA":"Load cycle amplitude A|%","loadB":"Load cycle amplitude B|%","loadPhase":"Load cycle phase|hour","initialSoc":"Initial battery SOC|%","shedSoc":"Load shedding SOC|%","restoreSoc":"Load restore SOC|%","pvMode":"PV capacity mode|sized;manual","manualPv":"Manual PV capacity|MW","batteryMode":"Battery capacity mode|sized;manual","manualBattery":"Manual battery capacity|MWh","availableTrains":"Online backup trains|count","stormEnabled":"Dust storm|on;off","stormStart":"Storm starts|sol","stormDuration":"Storm duration|sols","stormTransmission":"Storm solar transmission|%","recoverySols":"Recovery duration|sols"};
- const groups = [
- ["Demand & sizing",["population","demand","solHours","auxiliary","critical","sensitivity1","sensitivity2","sensitivity3"]],
- ["Solar array & derating",["irradiance","efficiency","sunHours","retentionMode","retention","pvMargin","coverage","blockMW","spectral","soiling","temperature","mismatch","wiring","conversion","pvAvailability","radiation","pvEol","pvMode","manualPv"]],
- ["Battery storage",["chemistry","storageSols","dod","chargeEfficiency","dischargeEfficiency","batteryEol","batteryAvailability","reserve","maxC","chargeMW","dischargeMW","specificEnergy","batteryMode","manualBattery","initialSoc","shedSoc","restoreSoc"]],
- ["Backup & fuel",["firmMargin","roundingMW","trains","spares","enduranceSols","transferHours","trainAvailability","pathAvailability","commonCause","fuelEfficiency","fuelLhv","oxygenRatio","availableTrains"]],
- ["Seasonal & dust-storm assumptions",["yearSols","stepsPerSol","seasonA","seasonB","seasonPhaseA","seasonPhaseB","sunrise","sunset","loadA","loadB","loadPhase","stormEnabled","stormStart","stormDuration","stormTransmission","recoverySols"]]
- ];
- let baseline = null;
- const wrap=document.createElement("div");wrap.className="v9-wrap";
- wrap.innerHTML='<h3>Version 9 · Advanced scenario</h3><p class="v9-hint">Edit, import or export the complete V9 configuration. The main dashboard retains first-order sizing; the scenario panel also provides illustrative storm and storage estimates.</p><div class="v9-actions"><button type="button" id="v9-export">Export JSON</button><label>Import JSON <input type="file" id="v9-import" accept=".json,application/json" hidden></label></div><div id="v9-msg" role="status" aria-live="polite"></div>';
- for(const [name,keys] of groups){
-  const det=document.createElement("details");if(name==="Demand & sizing")det.open=true;
-  const summary=document.createElement("summary");summary.textContent=name;det.append(summary);
-  const grid=document.createElement("div");grid.className="v9-grid";
-  for(const key of keys){
-   const [label,units]=spec[key].split("|"), el=document.createElement("div");el.className="v9-field";
-   const lab=document.createElement("label");lab.htmlFor="v9-"+key;lab.textContent=label+(units.includes(";")?"":" ("+units+")");el.append(lab);
-   let inp;
-   if(units.includes(";")){inp=document.createElement("select");for(const v of units.split(";")){const opt=document.createElement("option");opt.value=v;opt.textContent=v;inp.append(opt)}}
-   else {inp=document.createElement("input");inp.type="number";inp.step="any";}
-   inp.id="v9-"+key;inp.dataset.key=key;el.append(inp);grid.append(el);
-  }det.append(grid);wrap.append(det);
- }
- document.getElementById("model-form").append(wrap);
- const results=document.createElement("section");results.className="v9-results";
- results.innerHTML='<h3>V9 operational scenario (illustrative)</h3><div id="v9-metrics"></div><p class="v9-hint">This deterministic simplified balance model is exploratory, not a validated reliability or loss-of-load study. Availability values are inputs, not independently sampled failure probabilities; thermal, maintenance, dispatch, ramping and habitat loads are not resolved.</p>';
- document.querySelector(".workspace").insertBefore(results,document.querySelector(".workspace").children[2]);
- const inputs=[...wrap.querySelectorAll("[data-key]")];
- const state=()=>Object.fromEntries(inputs.map(el=>[el.dataset.key,el.tagName==="SELECT"?el.value:Number(el.value)]));
- const setState=a=>{for(const el of inputs){if(Object.hasOwn(a,el.dataset.key))el.value=a[el.dataset.key]}};
- const pct=(x)=>Math.max(0,Number(x)||0)/100;
- function run(){
-  const a=state();window.v9=a;
-  const mainDemand=document.querySelector('input[name="demand"]:checked');
-  if(a.population!==undefined)document.getElementById("population").value=a.population;
-  if([60,100,150].includes(a.demand)){const match=document.getElementById("demand-"+a.demand);if(match)match.checked=true;}
-  const sh=document.getElementById("sun-hours");sh.value=Math.max(Number(sh.min),Math.min(Number(sh.max),a.sunHours));
-  const losses=["spectral","soiling","temperature","mismatch","wiring","conversion","pvAvailability","radiation","pvEol"];
-  const d=a.retentionMode==="factors"?losses.reduce((v,k)=>v*pct(a[k]),1):pct(a.retention);
-  document.getElementById("retention").value=Math.max(0.43,Math.min(.94,d));
-  Object.assign(CONSTANTS,{irradianceKwM2:a.irradiance/1000,solHours:a.solHours,pvEfficiency:pct(a.efficiency),storageSols:a.storageSols,depthOfDischarge:pct(a.dod),dischargeEfficiency:pct(a.dischargeEfficiency),endOfLifeRetention:pct(a.batteryEol),availability:pct(a.batteryAvailability),reserveFraction:pct(a.reserve),criticalLoadFraction:pct(a.critical),firmDesignAllowance:pct(a.firmMargin)});
-  window.refreshSizing();
-  const demandMWh=(a.population*a.demand/1000+a.auxiliary);
-  const avgMW=demandMWh/a.solHours;
-  const usableYield=a.sunHours*a.irradiance/1000*pct(a.efficiency)*d;
-  const pvMW=a.pvMode==="manual"?a.manualPv:demandMWh*a.pvMargin/Math.max(.001,a.sunHours*d);
-  const battMWh=a.batteryMode==="manual"?a.manualBattery:(demandMWh*a.storageSols/Math.max(.0001,pct(a.dod)*pct(a.dischargeEfficiency)*pct(a.batteryEol)*pct(a.batteryAvailability)*(1-pct(a.reserve))));
-  const area= pvMW*1000000/Math.max(.001,a.irradiance*pct(a.efficiency));
-  const gross=area/Math.max(.001,pct(a.coverage));
-  const stormEnergy=demandMWh*Math.min(a.stormDuration,a.enduranceSols);
-  const fuelKg=stormEnergy*1000/Math.max(.001,pct(a.fuelEfficiency)*a.fuelLhv);
-  const firmMW=Math.ceil((avgMW*pct(a.critical)*(1+pct(a.firmMargin)))/a.roundingMW)*a.roundingMW;
-  const annualStormSols=a.stormEnabled==="on"?Math.max(0,Math.min(a.yearSols-a.stormStart,a.stormDuration)):0;
-  const stormSolarFactor=pct(a.stormTransmission);
-  const nominalProductionMWh=pvMW*a.sunHours*d;
-  const stormProductionMWh=nominalProductionMWh*stormSolarFactor;
-  const deficitPerStormSol=Math.max(0,demandMWh-stormProductionMWh);
-  const availableStorageMWh=battMWh*pct(a.dod)*pct(a.batteryEol)*pct(a.batteryAvailability)*(1-pct(a.reserve))*pct(a.dischargeEfficiency);
-  const netStormDeficit=Math.max(0,deficitPerStormSol*annualStormSols-availableStorageMWh-a.availableTrains*firmMW*a.solHours*annualStormSols);
-  const figures=[
-  ["PV nameplate",pvMW.toFixed(2)+" MW"],["PV active area", (area/1e6).toFixed(3)+" km²"],["Gross field footprint",(gross/1e6).toFixed(3)+" km²"],
-  ["Battery nameplate",battMWh.toFixed(1)+" MWh"],["Approx. deliverable battery energy",availableStorageMWh.toFixed(1)+" MWh"],
-  ["Backup per train",firmMW.toFixed(2)+" MW"],["Backup fleet",a.trains+" trains + "+a.spares+" spare(s)"],
-  ["Storm solar generation",stormProductionMWh.toFixed(1)+" MWh/sol"],["Storm deficit before storage/backup",deficitPerStormSol.toFixed(1)+" MWh/sol"],
-  ["Simplified storm remaining gap",netStormDeficit.toFixed(1)+" MWh"],["Backup fuel for "+a.enduranceSols+" sols (full demand)",fuelKg.toFixed(0)+" kg"]
-  ];
-  document.getElementById("v9-metrics").replaceChildren(...figures.map(([k,v])=>{const p=document.createElement("div");p.className="v9-stat";p.textContent=k+": "+v;return p}));
- }
- async function init(){
-  try{const r=await fetch("./mars-microgrid-scenario-v9.json",{cache:"no-store"});if(!r.ok)throw Error("Scenario JSON unavailable");
-   const j=await r.json();if(j.version!==9||!j.assumptions)throw Error("Invalid version 9 scenario");baseline=j;setState(j.assumptions);run();
-  }catch(e){document.getElementById("v9-msg").textContent=e.message;}
- }
- wrap.addEventListener("input",run);
- document.getElementById("v9-export").addEventListener("click",()=>{const blob=new Blob([JSON.stringify({model:"Mars Solar Microgrid",version:9,units:"As labelled in the input controls",assumptions:state()},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="mars-microgrid-scenario-v9.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
- document.getElementById("v9-import").addEventListener("change",async e=>{try{const j=JSON.parse(await e.target.files[0].text());if(j.version!==9||!j.assumptions)throw Error("Expected a Version 9 scenario.");setState(j.assumptions);run();document.getElementById("v9-msg").textContent="Scenario imported."}catch(err){document.getElementById("v9-msg").textContent=err.message}});
- window.resetV9=()=>{if(baseline){setState(baseline.assumptions);run()}};
- document.getElementById("model-form").addEventListener("input",e=>{if(e.target.closest(".v9-wrap"))return;const a=state();if(e.target.id==="population")a.population=Number(e.target.value);if(e.target.name==="demand")a.demand=Number(e.target.value);if(e.target.id==="sun-hours")a.sunHours=Number(e.target.value);if(e.target.id==="retention"){a.retention=Math.round(Number(e.target.value)*100);a.retentionMode="aggregate"}setState(a);run()});
- init();
-})();
-</script>
 </body>
 </html>
